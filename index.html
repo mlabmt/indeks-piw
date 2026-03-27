@@ -3,164 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indeks Piwa - Ile Kosztuje Polska?</title>
+    <title>ILE - Transparentny Index Cen</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #e74c3c;
-            --light: #f8f9fa;
-        }
-
-        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; background: var(--light); color: var(--primary); }
+        :root { --primary: #2c3e50; --accent: #27ae60; --text: #34495e; --light: #f1f2f6; }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--light); color: var(--text); }
         
-        /* Header & Navigation */
-        header { 
-            background: white; padding: 15px 5%; display: flex; justify-content: space-between; 
-            align-items: center; position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        /* Menu Nawigacyjne */
+        nav { 
+            background: white; padding: 0 5%; height: 70px; display: flex; 
+            justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 15px rgba(0,0,0,0.1);
         }
-        .logo { font-size: 24px; font-weight: 800; color: var(--primary); text-decoration: none; }
+        .logo { font-size: 26px; font-weight: 900; color: var(--primary); text-decoration: none; letter-spacing: -1px; }
         .logo span { color: var(--accent); }
+        .nav-links { display: flex; gap: 25px; }
+        .nav-links a { text-decoration: none; color: var(--text); font-weight: 600; font-size: 14px; transition: 0.3s; }
+        .nav-links a:hover { color: var(--accent); }
 
-        /* Live Ticker */
-        .ticker-wrap { background: #1a1a1a; color: white; padding: 8px 0; overflow: hidden; white-space: nowrap; }
-        .ticker { display: inline-block; animation: ticker 30s linear infinite; }
-        .ticker-item { display: inline-block; margin-right: 50px; font-size: 13px; font-weight: 500; }
-        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-
-        /* Hero Section */
-        .hero { padding: 60px 5%; text-align: center; background: white; }
-        .hero h1 { font-size: 42px; margin-bottom: 15px; letter-spacing: -1px; }
-        .hero p { font-size: 18px; color: #7f8c8d; max-width: 700px; margin: 0 auto 30px; }
-
-        /* Container for Map and Controls */
-        .app-container { position: relative; height: 700px; margin: 20px 5% 60px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        /* App Layout */
+        .main-container { display: flex; flex-direction: column; padding: 20px 5%; gap: 20px; }
         
-        #map { height: 100%; width: 100%; }
-
-        /* Updated Controls UI */
-        .controls { 
-            position: absolute; top: 20px; left: 20px; z-index: 1000; 
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            padding: 25px; border-radius: 15px; width: 260px; border: 1px solid rgba(0,0,0,0.05);
+        .app-shell { 
+            display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 700px; 
+            background: white; padding: 10px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
-        .controls label { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block; color: #95a5a6; }
-        select { width: 100%; margin-bottom: 20px; padding: 12px; border-radius: 8px; border: 1px solid #eee; font-size: 15px; }
 
-        /* Mission Section */
-        .mission { padding: 80px 5%; background: #fff; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
-        .mission-text h2 { font-size: 32px; margin-bottom: 20px; }
-        .mission-text p { font-size: 16px; line-height: 1.6; color: #576574; }
+        /* Sidebar Filters */
+        .sidebar { padding: 20px; background: #fafafa; border-radius: 15px; overflow-y: auto; }
+        .sidebar h3 { margin-top: 0; font-size: 18px; }
+        label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #95a5a6; display: block; margin: 15px 0 5px; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: white; font-size: 14px; }
 
-        .price-tag { font-weight: 800; color: var(--accent); font-size: 1.4em; }
+        #map { height: 100%; width: 100%; border-radius: 15px; }
 
-        @media (max-width: 768px) {
-            .mission { grid-template-columns: 1fr; text-align: center; }
-            .hero h1 { font-size: 30px; }
-            .controls { position: relative; width: calc(100% - 40px); top: 0; left: 0; margin: 10px auto; }
-            .app-container { height: 500px; }
+        /* Popup / Wizytówka Style */
+        .popup-card { width: 220px; font-family: sans-serif; }
+        .popup-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
+        .popup-title { font-size: 16px; font-weight: 800; margin: 0; }
+        .popup-rating { color: #f1c40f; font-size: 14px; margin: 2px 0 8px; }
+        .popup-price { font-size: 20px; font-weight: 800; color: #e74c3c; margin-bottom: 10px; }
+        .btn-group { display: flex; gap: 5px; }
+        .btn { 
+            flex: 1; padding: 8px; border-radius: 5px; text-decoration: none; 
+            font-size: 11px; text-align: center; font-weight: 700; color: white;
+        }
+        .btn-web { background: var(--primary); }
+        .btn-route { background: var(--accent); }
+
+        @media (max-width: 1024px) {
+            .app-shell { grid-template-columns: 1fr; height: auto; }
+            #map { height: 500px; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <a href="#" class="logo">INDEKS<span>PIWA</span></a>
-    <div style="font-size: 14px; font-weight: 600;">Miejsce na Menu</div>
-</header>
+<nav>
+    <a href="#" class="logo">ILE<span>.pl</span></a>
+    <div class="nav-links">
+        <a href="#">LOKALE</a>
+        <a href="#">RODZAJE PIW</a>
+        <a href="#">PROMOCJE</a>
+        <a href="#">O PROJEKCIE</a>
+    </div>
+    <div style="font-size: 12px; color: #95a5a6; font-weight: 600;">FUNDACJA WSPIERANIA OPERATORÓW</div>
+</nav>
 
-<div class="ticker-wrap">
-    <div class="ticker">
-        <span class="ticker-item">🍺 LUBLIN: Perła 12.00 zł (-)</span>
-        <span class="ticker-item">🍺 WARSZAWA: Królewskie 18.00 zł (↑)</span>
-        <span class="ticker-item">🍺 KRAKÓW: Okocim 14.00 zł (-)</span>
-        <span class="ticker-item">🍺 OPOLE: Namysłów 10.00 zł (HIT!)</span>
-        <span class="ticker-item">🍺 ŁÓDŹ: Łomża 18.00 zł (↑)</span>
+<div class="main-container">
+    <div class="app-shell">
+        <div class="sidebar">
+            <h3>Filtry</h3>
+            <label>Miasto</label>
+            <select id="f-city"><option value="all">Wszystkie Miasta</option></select>
+            
+            <label>Kategoria</label>
+            <select id="f-cat">
+                <option value="all">Wszystkie Lokale</option>
+                <option value="Bar">Bary / Puby</option>
+                <option value="Restauracja">Restauracje</option>
+            </select>
+
+            <label>Podanie</label>
+            <select id="f-type">
+                <option value="all">Dowolne</option>
+                <option value="Lane">Tylko Lane</option>
+                <option value="Butelka">Tylko Butelka</option>
+            </select>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #eef2f3; border-radius: 10px; font-size: 12px;">
+                <strong>Widzisz błąd?</strong><br>
+                Zgłoś nieprawidłowość w cenie, a my zweryfikujemy ją botem.
+            </div>
+        </div>
+        <div id="map"></div>
     </div>
 </div>
-
-<section class="hero">
-    <h1>Ile kosztuje lokalne piwo?</h1>
-    <p>Transparentny monitoring cen w 16 stolicach Polski. Flagujemy nieprawidłowości, wspieramy uczciwą gastronomię.</p>
-</section>
-
-<div class="app-container">
-    <div class="controls">
-        <label>Twoje Miasto</label>
-        <select id="filter-city"><option value="all">Wszystkie Miasta</option></select>
-
-        <label>Gdzie chcesz iść?</label>
-        <select id="filter-category">
-            <option value="all">Bar / Restauracja</option>
-            <option value="Bar">Tylko Bary</option>
-            <option value="Restauracja">Tylko Restauracje</option>
-        </select>
-
-        <label>Jakie podanie?</label>
-        <select id="filter-type">
-            <option value="all">Dowolne</option>
-            <option value="Lane">Tylko Lane</option>
-            <option value="Butelka">Tylko Butelka</option>
-        </select>
-    </div>
-    <div id="map"></div>
-</div>
-
-<section class="mission">
-    <div class="mission-text">
-        <h2>Nasza misja: Transparentność</h2>
-        <p>Jako fundacja nie walczymy z gastronomią. Naszym celem jest dostarczanie rzetelnej informacji. Flagujemy błędy w menu online i promujemy miejsca, które oferują uczciwy stosunek jakości do ceny.</p>
-        <p>Dane są weryfikowane przez naszą społeczność oraz zautomatyzowane boty monitorujące rynek w czasie rzeczywistym.</p>
-    </div>
-    <div style="background: #eee; height: 300px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-style: italic; color: #999;">
-        [Miejsce na grafikę Twojej Fundacji]
-    </div>
-</section>
-
-<footer style="padding: 40px 5%; text-align: center; border-top: 1px solid #eee; font-size: 13px; color: #999;">
-    &copy; 2026 Indeks Piwa - Projekt PanKamski Data. Dane zbierane przy użyciu AI.
-</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
 <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY5aTfEtqblePV5vGYDhcNXQCy9oK6AtN6kiiJIX3zyifdwKDLSWUyqB5HxEnMh6kvrTGuQy5JqDBA/pub?output=csv';
-
-    const map = L.map('map', { minZoom: 6, maxZoom: 18, zoomControl: true }).setView([51.9, 19.1], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OS' }).addTo(map);
+    const map = L.map('map', { minZoom: 6, maxZoom: 18 }).setView([51.9, 19.1], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     let allData = [];
     const markerGroup = L.layerGroup().addTo(map);
 
     function updateMap() {
         markerGroup.clearLayers();
-        const cityVal = document.getElementById('filter-city').value;
-        const catVal = document.getElementById('filter-category').value;
-        const typeVal = document.getElementById('filter-type').value;
-
-        let firstMatchCoords = null;
+        const city = document.getElementById('f-city').value;
+        const cat = document.getElementById('f-cat').value;
+        const type = document.getElementById('f-type').value;
+        let jumpTo = null;
 
         allData.forEach(row => {
-            if((cityVal === 'all' || row.City === cityVal) && 
-               (catVal === 'all' || row.Category === catVal) && 
-               (typeVal === 'all' || row.Type === typeVal) && row.Lat && row.Lng) {
-                
-                const lat = parseFloat(String(row.Lat).replace(',', '.'));
-                const lng = parseFloat(String(row.Lng).replace(',', '.'));
-                if (!firstMatchCoords && cityVal !== 'all') firstMatchCoords = [lat, lng];
+            if((city === 'all' || row.City === city) && (cat === 'all' || row.Category === cat) && (type === 'all' || row.Type === type)) {
+                const lat = parseFloat(String(row.Lat).replace(',','.'));
+                const lng = parseFloat(String(row.Lng).replace(',','.'));
+                if(!jumpTo && city !== 'all') jumpTo = [lat, lng];
+
+                const stars = "⭐".repeat(Math.round(row.Rating || 0)) || "Brak ocen";
+                const img = row.Image || "https://picsum.photos/200/120?random=" + Math.random();
 
                 L.marker([lat, lng]).bindPopup(`
-                    <div class="popup-content">
-                        <b>${row.Place}</b><br><small>${row.Beer}</small><hr>
-                        Cena: <span class="price-tag">${row.Price} zł</span>
+                    <div class="popup-card">
+                        <img src="${img}" class="popup-img">
+                        <h4 class="popup-title">${row.Place}</h4>
+                        <div class="popup-rating">${stars} (${row.Rating || '0.0'})</div>
+                        <div style="font-size: 12px; color: #666;">${row.Beer}</div>
+                        <div class="popup-price">${row.Price} zł</div>
+                        <div class="btn-group">
+                            <a href="${row.Website || '#'}" target="_blank" class="btn btn-web">STRONA</a>
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" class="btn btn-route">TRASA</a>
+                        </div>
                     </div>
                 `).addTo(markerGroup);
             }
         });
 
-        if (cityVal === 'all') map.flyTo([51.9, 19.1], 6, { duration: 0.8 });
-        else if (firstMatchCoords) map.flyTo(firstMatchCoords, 14, { duration: 0.8 });
+        if(city === 'all') map.flyTo([51.9, 19.1], 6, {duration: 0.8});
+        else if(jumpTo) map.flyTo(jumpTo, 14, {duration: 0.8});
     }
 
     Papa.parse(csvUrl, {
@@ -168,10 +152,9 @@
         complete: function(results) {
             allData = results.data;
             const uniqueCities = [...new Set(allData.map(item => item.City).filter(Boolean))].sort();
-            uniqueCities.forEach(city => {
-                const opt = document.createElement("option");
-                opt.textContent = city; opt.value = city;
-                document.getElementById('filter-city').appendChild(opt);
+            uniqueCities.forEach(c => {
+                const o = document.createElement("option"); o.value = o.textContent = c;
+                document.getElementById('f-city').appendChild(o);
             });
             updateMap();
         }
@@ -179,6 +162,5 @@
 
     document.querySelectorAll('select').forEach(s => s.addEventListener('change', updateMap));
 </script>
-
 </body>
 </html>
