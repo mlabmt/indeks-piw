@@ -28,11 +28,19 @@
     // 1. TU WKLEJ SWÓJ LINK CSV Z GOOGLE SHEETS
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY5aTfEtqblePV5vGYDhcNXQCy9oK6AtN6kiiJIX3zyifdwKDLSWUyqB5HxEnMh6kvrTGuQy5JqDBA/pub?output=csv';
 
-    // 2. Inicjalizacja mapy na Polskę
-    const map = L.map('map').setView([52.237, 19.017], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+// 2. Inicjalizacja mapy z ograniczeniem widoku do Polski
+const map = L.map('map', {
+    minZoom: 5,
+    maxZoom: 15
+}).setView([51.9, 19.1], 6);
+
+// Opcjonalne: blokada przesuwania mapy poza Europę Środkową
+const bounds = [[48.0, 13.0], [56.0, 25.0]];
+map.setMaxBounds(bounds);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
 
     // 3. Pobieranie danych i stawianie pinezek
     Papa.parse(csvUrl, {
