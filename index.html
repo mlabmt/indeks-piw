@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indeks Piwa - Mapa ILE</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .price-tag { font-weight: bold; color: #e74c3c; font-size: 1.2em; }
+        .header { position: absolute; top: 10px; left: 50px; z-index: 1000; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 style="margin:0">Indeks Piwa 16 Miast 🍺</h2>
+    <p style="margin:5px 0 0">Sprawdź, ile kosztuje lokalne piwo w Twoim mieście.</p>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+<script>
+    // 1. TU WKLEJ SWÓJ LINK CSV Z GOOGLE SHEETS
+    const csvUrl = 'TWÓJ_LINK_DO_CSV_Z_GOOGLE_SHEETS_TUTAJ';
+
+    // 2. Inicjalizacja mapy na Polskę
+    const map = L.map('map').setView([52.237, 19.017], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 3. Pobieranie danych i stawianie pinezek
+    Papa.parse(csvUrl, {
+        download: true,
+        header: true,
+        complete: function(results) {
+            results.data.forEach(function(row) {
+                if(row.Lat && row.Lng) {
+                    const marker = L.marker([row.Lat, row.Lng]).addTo(map);
+                    marker.bindPopup(`
+                        <b>${row.Place}</b><br>
+                        Miasto: ${row.City}<br>
+                        Piwo: ${row.Beer}<br>
+                        Cena: <span class="price-tag">${row.Price} zł</span><br>
+                        <small>Data: ${new Date().toLocaleDateString()}</small>
+                    `);
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
