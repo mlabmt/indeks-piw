@@ -3,40 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indeks Piwa - Interaktywna Mapa ILE</title>
+    <title>Indeks Piwa - Mapa ILE</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #map { height: 100vh; width: 100%; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; }
+        #map { height: 100vh; width: 100%; z-index: 1; }
         
-        /* Panel sterowania */
+        /* Panel filtrów */
         .controls { 
-            position: absolute; top: 15px; left: 15px; z-index: 1000; 
+            position: absolute; top: 20px; left: 20px; z-index: 1000; 
             background: white; padding: 20px; border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 240px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: 240px;
         }
         h2 { margin: 0 0 5px 0; font-size: 20px; color: #2c3e50; }
         p { margin: 0 0 20px 0; font-size: 13px; color: #7f8c8d; line-height: 1.4; }
         
-        label { font-size: 11px; color: #34495e; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; letter-spacing: 0.5px; }
+        label { font-size: 11px; color: #34495e; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; }
         select { 
             width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 6px; 
             border: 1px solid #dcdde1; font-size: 14px; background-color: #f9f9f9;
-            outline: none; transition: border-color 0.3s;
+            outline: none; cursor: pointer;
         }
-        select:focus { border-color: #3498db; }
+        select:hover { border-color: #3498db; }
         
-        /* Popup i etykiety cen */
+        /* Popup */
         .price-tag { font-weight: bold; color: #e74c3c; font-size: 1.3em; }
-        .popup-content { line-height: 1.5; min-width: 150px; }
+        .popup-content { line-height: 1.5; min-width: 160px; font-size: 14px; }
         hr { border: 0; border-top: 1px solid #eee; margin: 8px 0; }
+        .update-date { font-size: 10px; color: #95a5a6; margin-top: 5px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="controls">
     <h2>Indeks Piwa 🍺</h2>
-    <p>Sprawdź realne ceny lokalnego piwa w 16 stolicach.</p>
+    <p>Realne ceny w 16 stolicach województw.</p>
 
     <label>Wybierz Miasto</label>
     <select id="filter-city">
@@ -52,13 +53,13 @@
 
     <label>Sposób Podania</label>
     <select id="filter-type">
-        <option value="all">Lane i Butelka</option>
+        <option value="all">Wszystkie rodzaje</option>
         <option value="Lane">Lane</option>
         <option value="Butelka">Butelka</option>
     </select>
     
-    <div style="font-size: 10px; color: #bdc3c7; text-align: center; margin-top: 10px;">
-        Dane aktualizowane przez AI bota
+    <div style="font-size: 10px; color: #bdc3c7; text-align: center; margin-top: 10px; border-top: 1px solid #eee; pt: 10px;">
+        Dane zbierane przez AI bota
     </div>
 </div>
 
@@ -75,23 +76,21 @@
     const map = L.map('map', {
         minZoom: 6,
         maxZoom: 18,
-        zoomControl: false // Ukrywamy przyciski +/- dla czystego wyglądu (opcjonalnie)
+        zoomControl: false 
     }).setView([51.9, 19.1], 6);
 
-    // Ograniczenie przesuwania do okolic Polski
-    const bounds = [[48.0, 13.0], [56.0, 25.0]];
+    // Ograniczenie widoku do Polski
+    const bounds = [[47.5, 13.5], [55.5, 24.5]];
     map.setMaxBounds(bounds);
 
-    // Dodanie warstwy wizualnej mapy
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Kontener na pinezki
     let allData = [];
     const markerGroup = L.layerGroup().addTo(map);
 
-    // 3. LOGIKA AKTUALIZACJI MAPY (FILTRY + PRZYBLIŻANIE)
+    // 3. LOGIKA AKTUALIZACJI I PRZYSPIESZONEGO ZOOMU
     function updateMap() {
         markerGroup.clearLayers();
         
@@ -102,16 +101,15 @@
         let firstMatchCoords = null;
 
         allData.forEach(row => {
-            // Sprawdzanie czy wiersz pasuje do filtrów
             const matchCity = (cityVal === 'all' || row.City === cityVal);
             const matchCat = (catVal === 'all' || row.Category === catVal);
             const matchType = (typeVal === 'all' || row.Type === typeVal);
 
             if(matchCity && matchCat && matchType && row.Lat && row.Lng) {
-                const lat = parseFloat(row.Lat.replace(',', '.'));
-                const lng = parseFloat(row.Lng.replace(',', '.'));
+                // Konwersja przecinków na kropki (bezpieczeństwo 0-code)
+                const lat = parseFloat(String(row.Lat).replace(',', '.'));
+                const lng = parseFloat(String(row.Lng).replace(',', '.'));
                 
-                // Zapamiętaj pierwsze pasujące miejsce do wycentrowania mapy
                 if (!firstMatchCoords && cityVal !== 'all') {
                     firstMatchCoords = [lat, lng];
                 }
@@ -119,35 +117,35 @@
                 const marker = L.marker([lat, lng]);
                 marker.bindPopup(`
                     <div class="popup-content">
-                        <b>${row.Place}</b><br>
-                        <small>${row.Category || ''}</small>
+                        <b style="font-size: 15px;">${row.Place}</b><br>
+                        <span style="color: #3498db;">${row.Category || ''}</span>
                         <hr>
                         Piwo: <b>${row.Beer}</b><br>
                         Typ: ${row.Type}<br>
-                        Cena: <span class="price-tag">${row.Price} zł</span><br>
-                        <small style="color: #95a5a6;">Miasto: ${row.City}</small>
+                        Cena: <span class="price-tag">${row.Price} zł</span>
+                        <span class="update-date">Aktualizacja: ${new Date().toLocaleDateString()}</span>
                     </div>
                 `);
                 markerGroup.addLayer(marker);
             }
         });
 
-        // Płynny dolot kamery
+        // PRZYSPIESZONY ZOOM (FlyTo)
         if (cityVal === 'all') {
-            map.flyTo([51.9, 19.1], 6);
+            map.flyTo([51.9, 19.1], 6, { duration: 0.8 }); 
         } else if (firstMatchCoords) {
-            map.flyTo(firstMatchCoords, 14); // Zbliżenie na miasto
+            map.flyTo(firstMatchCoords, 14, { duration: 0.8 }); 
         }
     }
 
-    // 4. POBIERANIE DANYCH I GENEROWANIE MENU
+    // 4. POBIERANIE DANYCH
     Papa.parse(csvUrl, {
         download: true,
         header: true,
         complete: function(results) {
             allData = results.data;
             
-            // Budowanie listy miast na podstawie danych z tabeli
+            // Dynamiczne menu miast
             const citySelect = document.getElementById('filter-city');
             const uniqueCities = [...new Set(allData.map(item => item.City).filter(Boolean))].sort();
             
@@ -158,11 +156,11 @@
                 citySelect.appendChild(opt);
             });
 
-            updateMap(); // Pierwsze rysowanie mapy
+            updateMap();
         }
     });
 
-    // 5. OBSŁUGA ZMIAN W FILTRACH
+    // 5. NASŁUCHIWANIE ZMIAN
     document.getElementById('filter-city').addEventListener('change', updateMap);
     document.getElementById('filter-category').addEventListener('change', updateMap);
     document.getElementById('filter-type').addEventListener('change', updateMap);
