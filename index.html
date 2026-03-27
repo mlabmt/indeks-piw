@@ -3,101 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ILE - Transparentny Index Cen</title>
+    <title>ILE.pl - Transparentny Indeks Cen i Usług</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --text: #34495e; --light: #f1f2f6; }
-        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--light); color: var(--text); }
-        
-        /* Menu Nawigacyjne */
-        nav { 
-            background: white; padding: 0 5%; height: 70px; display: flex; 
-            justify-content: space-between; align-items: center; 
-            position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --text: #34495e;
+            --light: #f1f2f6;
+            --danger: #e74c3c;
         }
-        .logo { font-size: 26px; font-weight: 900; color: var(--primary); text-decoration: none; letter-spacing: -1px; }
+
+        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; background: var(--light); color: var(--text); overflow-x: hidden; }
+
+        /* Nawigacja Górna */
+        nav { 
+            background: white; padding: 0 5%; height: 80px; display: flex; 
+            justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .logo { font-size: 28px; font-weight: 900; color: var(--primary); text-decoration: none; letter-spacing: -1px; }
         .logo span { color: var(--accent); }
-        .nav-links { display: flex; gap: 25px; }
-        .nav-links a { text-decoration: none; color: var(--text); font-weight: 600; font-size: 14px; transition: 0.3s; }
+        
+        .nav-links { display: flex; gap: 30px; }
+        .nav-links a { text-decoration: none; color: var(--text); font-weight: 600; font-size: 14px; text-transform: uppercase; transition: 0.3s; }
         .nav-links a:hover { color: var(--accent); }
 
-        /* App Layout */
-        .main-container { display: flex; flex-direction: column; padding: 20px 5%; gap: 20px; }
+        /* Layout Główny */
+        .main-content { display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 20px 5%; height: calc(100vh - 120px); }
+
+        /* Panel Boczny (Filtry) */
+        .sidebar { 
+            background: white; padding: 25px; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow-y: auto;
+        }
+        .sidebar h3 { margin-top: 0; font-size: 20px; color: var(--primary); }
         
-        .app-shell { 
-            display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 700px; 
-            background: white; padding: 10px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #bdc3c7; display: block; margin: 20px 0 8px; letter-spacing: 1px; }
+        select { 
+            width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #dfe6e9; 
+            background: #f9f9f9; font-size: 14px; outline: none; transition: 0.3s;
         }
+        select:focus { border-color: var(--accent); background: white; }
 
-        /* Sidebar Filters */
-        .sidebar { padding: 20px; background: #fafafa; border-radius: 15px; overflow-y: auto; }
-        .sidebar h3 { margin-top: 0; font-size: 18px; }
-        label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #95a5a6; display: block; margin: 15px 0 5px; }
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: white; font-size: 14px; }
+        /* Kontener Mapy */
+        #map-container { position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background: white; }
+        #map { height: 100%; width: 100%; z-index: 1; }
 
-        #map { height: 100%; width: 100%; border-radius: 15px; }
-
-        /* Popup / Wizytówka Style */
-        .popup-card { width: 220px; font-family: sans-serif; }
-        .popup-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
-        .popup-title { font-size: 16px; font-weight: 800; margin: 0; }
-        .popup-rating { color: #f1c40f; font-size: 14px; margin: 2px 0 8px; }
-        .popup-price { font-size: 20px; font-weight: 800; color: #e74c3c; margin-bottom: 10px; }
-        .btn-group { display: flex; gap: 5px; }
+        /* Styl Wizytówki (Popup) */
+        .popup-card { width: 240px; }
+        .popup-img { 
+            width: 100%; height: 130px; object-fit: cover; border-radius: 12px; 
+            margin-bottom: 12px; background: #eee;
+        }
+        .popup-title { font-size: 17px; font-weight: 800; margin: 0 0 4px 0; color: var(--primary); }
+        .popup-rating { color: #f1c40f; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
+        .popup-details { font-size: 13px; color: #7f8c8d; margin-bottom: 10px; }
+        .popup-price { font-size: 22px; font-weight: 900; color: var(--danger); margin: 10px 0; }
+        
+        .btn-group { display: flex; gap: 8px; margin-top: 10px; }
         .btn { 
-            flex: 1; padding: 8px; border-radius: 5px; text-decoration: none; 
-            font-size: 11px; text-align: center; font-weight: 700; color: white;
+            flex: 1; padding: 10px 5px; border-radius: 8px; text-decoration: none; 
+            font-size: 11px; text-align: center; font-weight: 700; transition: 0.3s;
         }
-        .btn-web { background: var(--primary); }
-        .btn-route { background: var(--accent); }
+        .btn-web { background: var(--light); color: var(--primary); border: 1px solid #ddd; }
+        .btn-route { background: var(--accent); color: white; }
+        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
 
-        @media (max-width: 1024px) {
-            .app-shell { grid-template-columns: 1fr; height: auto; }
-            #map { height: 500px; }
+        /* Mobile Adjustments */
+        @media (max-width: 900px) {
+            .main-content { grid-template-columns: 1fr; height: auto; }
+            .sidebar { order: 2; }
+            #map-container { height: 500px; order: 1; }
+            .nav-links { display: none; }
         }
     </style>
 </head>
 <body>
 
 <nav>
-    <a href="#" class="logo">Indeks<span>piw</span></a>
+    <a href="#" class="logo">ILE<span>.pl</span></a>
     <div class="nav-links">
         <a href="#">LOKALE</a>
         <a href="#">RODZAJE PIW</a>
         <a href="#">PROMOCJE</a>
-        <a href="#">O PROJEKCIE</a>
+        <a href="#">ZGŁOŚ CENĘ</a>
     </div>
-    <div style="font-size: 12px; color: #95a5a6; font-weight: 600;"></div>
+    <div style="text-align: right;">
+        <div style="font-size: 10px; font-weight: 800; color: #bdc3c7;">PROJEKT FUNDACJI</div>
+        <div style="font-size: 12px; font-weight: 600; color: var(--primary);">WSPIERANIA OPERATORÓW</div>
+    </div>
 </nav>
 
-<div class="main-container">
-    <div class="app-shell">
-        <div class="sidebar">
-            <h3>Filtry</h3>
-            <label>Miasto</label>
-            <select id="f-city"><option value="all">Wszystkie Miasta</option></select>
-            
-            <label>Kategoria</label>
-            <select id="f-cat">
-                <option value="all">Wszystkie Lokale</option>
-                <option value="Bar">Bary / Puby</option>
-                <option value="Restauracja">Restauracje</option>
-            </select>
+<div class="main-content">
+    <aside class="sidebar">
+        <h3>Filtruj Wyniki</h3>
+        
+        <label>Lokalizacja</label>
+        <select id="f-city">
+            <option value="all">Wszystkie Miasta</option>
+        </select>
 
-            <label>Podanie</label>
-            <select id="f-type">
-                <option value="all">Dowolne</option>
-                <option value="Lane">Tylko Lane</option>
-                <option value="Butelka">Tylko Butelka</option>
-            </select>
-            
-            <div style="margin-top: 30px; padding: 15px; background: #eef2f3; border-radius: 10px; font-size: 12px;">
-                <strong>Widzisz błąd?</strong><br>
-                Zgłoś nieprawidłowość w cenie, a my zweryfikujemy ją botem.
-            </div>
+        <label>Kategoria Lokalu</label>
+        <select id="f-cat">
+            <option value="all">Wszystkie Kategorie</option>
+            <option value="Bar">Bary / Puby</option>
+            <option value="Restauracja">Restauracje</option>
+            <option value="Sklep">Sklepy (Wkrótce)</option>
+        </select>
+
+        <label>Sposób Podania</label>
+        <select id="f-type">
+            <option value="all">Dowolny</option>
+            <option value="Lane">Tylko Lane</option>
+            <option value="Butelka">Tylko Butelka</option>
+        </select>
+
+        <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 15px; border-left: 4px solid var(--accent);">
+            <p style="font-size: 13px; margin: 0; line-height: 1.5;">
+                <strong>Transparentność:</strong><br>
+                Dane pochodzą z Google Maps oraz zgłoszeń użytkowników. Jeśli widzisz błąd, flaguj nieprawidłowość.
+            </p>
         </div>
+    </aside>
+
+    <main id="map-container">
         <div id="map"></div>
-    </div>
+    </main>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -105,8 +137,16 @@
 
 <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY5aTfEtqblePV5vGYDhcNXQCy9oK6AtN6kiiJIX3zyifdwKDLSWUyqB5HxEnMh6kvrTGuQy5JqDBA/pub?output=csv';
-    const map = L.map('map', { minZoom: 6, maxZoom: 18 }).setView([51.9, 19.1], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const map = L.map('map', { 
+        minZoom: 6, 
+        maxZoom: 18,
+        zoomControl: true 
+    }).setView([51.9, 19.1], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
     let allData = [];
     const markerGroup = L.layerGroup().addTo(map);
@@ -116,51 +156,79 @@
         const city = document.getElementById('f-city').value;
         const cat = document.getElementById('f-cat').value;
         const type = document.getElementById('f-type').value;
+
         let jumpTo = null;
 
         allData.forEach(row => {
-            if((city === 'all' || row.City === city) && (cat === 'all' || row.Category === cat) && (type === 'all' || row.Type === type)) {
+            const matchCity = (city === 'all' || row.City === city);
+            const matchCat = (cat === 'all' || row.Category === cat);
+            const matchType = (type === 'all' || row.Type === type);
+
+            if(matchCity && matchCat && matchType && row.Lat && row.Lng) {
                 const lat = parseFloat(String(row.Lat).replace(',','.'));
                 const lng = parseFloat(String(row.Lng).replace(',','.'));
+                
                 if(!jumpTo && city !== 'all') jumpTo = [lat, lng];
 
-                const stars = "⭐".repeat(Math.round(row.Rating || 0)) || "Brak ocen";
-                const img = row.Image || "https://picsum.photos/200/120?random=" + Math.random();
+                // Karuzela obrazków - jeśli w Excelu nie ma Image, bierze losowe
+                const imgUrl = row.Image && row.Image !== "" ? row.Image : `https://picsum.photos/seed/${encodeURIComponent(row.Place)}/300/200`;
+                const rating = row.Rating ? row.Rating : "0.0";
+                const stars = "★".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
 
-                L.marker([lat, lng]).bindPopup(`
+                const marker = L.marker([lat, lng]);
+                marker.bindPopup(`
                     <div class="popup-card">
-                        <img src="${img}" class="popup-img">
+                        <img src="${imgUrl}" class="popup-img" alt="${row.Place}">
                         <h4 class="popup-title">${row.Place}</h4>
-                        <div class="popup-rating">${stars} (${row.Rating || '0.0'})</div>
-                        <div style="font-size: 12px; color: #666;">${row.Beer}</div>
+                        <div class="popup-rating">${stars} <span>${rating}</span></div>
+                        <div class="popup-details">
+                            <b>${row.Beer}</b> (${row.Type})<br>
+                            ${row.City}
+                        </div>
                         <div class="popup-price">${row.Price} zł</div>
                         <div class="btn-group">
-                            <a href="${row.Website || '#'}" target="_blank" class="btn btn-web">STRONA</a>
+                            <a href="${row.Website || '#'}" target="_blank" class="btn btn-web">WWW</a>
                             <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" class="btn btn-route">TRASA</a>
                         </div>
                     </div>
-                `).addTo(markerGroup);
+                `);
+                markerGroup.addLayer(marker);
             }
         });
 
-        if(city === 'all') map.flyTo([51.9, 19.1], 6, {duration: 0.8});
-        else if(jumpTo) map.flyTo(jumpTo, 14, {duration: 0.8});
+        // Szybki FlyTo (0.8s)
+        if(city === 'all') {
+            map.flyTo([51.9, 19.1], 6, { duration: 0.8 });
+        } else if(jumpTo) {
+            map.flyTo(jumpTo, 14, { duration: 0.8 });
+        }
     }
 
     Papa.parse(csvUrl, {
-        download: true, header: true,
+        download: true,
+        header: true,
         complete: function(results) {
             allData = results.data;
+            
+            // Dynamiczne miasta
+            const citySelect = document.getElementById('f-city');
             const uniqueCities = [...new Set(allData.map(item => item.City).filter(Boolean))].sort();
+            
             uniqueCities.forEach(c => {
-                const o = document.createElement("option"); o.value = o.textContent = c;
-                document.getElementById('f-city').appendChild(o);
+                const o = document.createElement("option");
+                o.value = o.textContent = c;
+                citySelect.appendChild(o);
             });
+
             updateMap();
         }
     });
 
-    document.querySelectorAll('select').forEach(s => s.addEventListener('change', updateMap));
+    document.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', updateMap);
+    });
+
 </script>
+
 </body>
 </html>
